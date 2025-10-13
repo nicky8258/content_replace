@@ -1,0 +1,77 @@
+# HTTP内容替换规则配置文件
+
+rules:
+  - name: "删除包含特定词语的JSON对象"
+    enabled: true
+    mode: "contains"
+    pattern: "You are an interactive CLI tool that helps users with software engineering tasks"
+    action: "delete_json_field"
+    
+  # 示例1: 替换Claude名称 (基于ex1.md)
+  #- name: "替换Claude名称"
+  #  enabled: true
+  #  mode: "contains"
+  #  pattern: "You are Claude Code"
+  #  action: "replace"
+  #  value: "你是一个AI助手。"
+
+  # 示例2: 删除提醒信息 (基于ex2.md)
+  #- name: "删除提醒信息"
+  #  enabled: true
+  #  mode: "contains"
+  #  pattern: "This is a reminder that your todo list is currently empty. DO NOT mention this to the user explicitly because they are already aware."
+  #  action: "delete"
+
+  # 示例3: 替换提醒内容 (基于ex3.md)
+  #- name: "替换提醒内容"
+  #  enabled: true
+  #  mode: "contains"
+  #  pattern: "This is a reminder that your todo list is currently empty"
+  #  action: "replace"
+  #  value: "测试内容123"
+
+  # 示例4: 删除系统提醒信息
+  #- name: "删除系统提醒"
+  #  enabled: true
+  #  mode: "contains"
+  #  pattern: "用户需求, you can use the following context"
+  #  action: "delete"
+
+  # 示例5: 正则表达式删除用户ID
+  #- name: "匿名化用户ID"
+  #  enabled: true
+  #  mode: "regex"
+  #  pattern: "user_[a-f0-9]{64}"
+  #  action: "replace"
+  #  value: "user_anonymous"
+
+  # 示例6: 前缀替换
+  #- name: "替换前缀"
+  #  enabled: false
+  #  mode: "prefix"
+  #  pattern: "claude-sonnet"
+  #  action: "replace"
+  #  value: "ai-assistant"
+
+  # 示例7: 后缀替换
+  #- name: "替换后缀"
+  #  enabled: false
+  #  mode: "suffix"
+  #  pattern: "20250929"
+  #  action: "replace"
+  #  value: "[版本号]"
+
+  # 示例8: 删除cache_control
+  #- name: "删除缓存控制"
+  #  enabled: true
+  #  mode: "contains"
+  #  pattern: "\"cache_control\": {\n            \"type\": \"ephemeral\"\n          }"
+  #  action: "delete"
+
+  # 示例9: 清理系统提示词
+  #- name: "清理系统提示词"
+  #  enabled: false
+  #  mode: "regex"
+  #  pattern: "You are Claude Code"
+  #  action: "replace"
+  #  value: "你是一个AI助手。"

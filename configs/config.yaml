@@ -1,0 +1,35 @@
+# HTTP内容替换代理服务器配置文件
+
+# 服务器配置
+server:
+  host: "0.0.0.0"          # 监听地址
+  port: 8080               # 监听端口
+
+# 目标服务器配置
+target:
+  base_url: "http://10.0.0.50:3001"  # 目标服务器地址
+  timeout: 30s                      # 请求超时时间
+
+# 日志配置
+logging:
+  level: "info"            # 日志级别: debug, info, warn, error
+  file: "logs/proxy.log"   # 日志文件路径
+
+# 规则配置
+rules:
+  # 方式1: 单个规则文件（原有方式）
+  #file: "configs/rules.yaml"  # 规则文件路径
+  
+  # 方式2: 多个规则文件（新增功能）
+  files:
+    - "configs/rules.yaml"     # 传统规则文件
+    - "configs/easy01.yaml"    # 简单规则文件
+  
+  auto_reload: true           # 是否自动重载规则
+
+# 调试配置
+debug:
+  enabled: true              # 是否启用调试模式
+  show_original: true        # 是否显示原始请求内容
+  show_modified: true        # 是否显示修改后请求内容
+  show_rule_matches: true    # 是否显示规则匹配情况
