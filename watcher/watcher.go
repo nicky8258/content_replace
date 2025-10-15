@@ -33,25 +33,40 @@ func NewWatcher(rulesPath []string, callback func([]config.Rule) error) (*Watche
 	ctx, cancel := context.WithCancel(context.Background())
 
 	w := &Watcher{
-		watcher:   watcher,
-		rulesPath: rulesPath,
-		ctx:       ctx,
-		cancel:    cancel,
-		callback:  callback,
+		watcher:  watcher,
+		ctx:      ctx,
+		cancel:   cancel,
+		callback: callback,
 	}
+
+	// 转换并存储绝对路径
+	absPaths := make([]string, 0, len(rulesPath))
+	for _, path := range rulesPath {
+		abs, err := filepath.Abs(path)
+		if err != nil {
+			logger.Error("获取文件绝对路径失败 %s: %v", path, err)
+			continue
+		}
+		absPaths = append(absPaths, abs)
+	}
+	w.rulesPath = absPaths
 
 	// 初始加载规则
 	if err := w.loadRules(); err != nil {
 		logger.Error("初始加载规则失败: %v", err)
 	}
 
-	// 添加监听路径
-	for _, path := range rulesPath {
+	// 添加监听路径（目录）
+	dirs := make(map[string]bool)
+	for _, path := range w.rulesPath {
 		dir := filepath.Dir(path)
-		if err := w.watcher.Add(dir); err != nil {
-			logger.Error("添加监听路径失败 %s: %v", dir, err)
-		} else {
-			logger.Debug("添加监听路径: %s", dir)
+		if !dirs[dir] {
+			if err := w.watcher.Add(dir); err != nil {
+				logger.Error("添加监听路径失败 %s: %v", dir, err)
+			} else {
+				logger.Debug("添加监听路径: %s", dir)
+				dirs[dir] = true
+			}
 		}
 	}
 
@@ -75,7 +90,9 @@ func (w *Watcher) Stop() {
 // watchLoop 监听循环
 func (w *Watcher) watchLoop() {
 	debounceTimer := time.NewTimer(0)
-	<-debounceTimer.C // 立即停止定时器
+	if !debounceTimer.Stop() {
+		<-debounceTimer.C // 立即停止定时器
+	}
 
 	for {
 		select {
@@ -108,11 +125,7 @@ func (w *Watcher) handleEvent(event fsnotify.Event, debounceTimer *time.Timer) {
 	logger.Debugf("文件事件: %s %s", event.Op.String(), event.Name)
 
 	// 只处理写入和创建事件
-	if event.Op&fsnotify.Write == fsnotify.Write || 
-	   event.Op&fsnotify.Create == fsnotify.Create ||
-	   event.Op&fsnotify.Remove == fsnotify.Remove ||
-	   event.Op&fsnotify.Rename == fsnotify.Rename {
-		
+	if event.Has(fsnotify.Write) || event.Has(fsnotify.Create) || event.Has(fsnotify.Remove) || event.Has(fsnotify.Rename) {
 		// 重置防抖定时器
 		debounceTimer.Stop()
 		debounceTimer.Reset(500 * time.Millisecond) // 500ms防抖
@@ -126,8 +139,14 @@ func (w *Watcher) handleEvent(event fsnotify.Event, debounceTimer *time.Timer) {
 
 // isWatchedFile 检查是否是我们监听的文件
 func (w *Watcher) isWatchedFile(filename string) bool {
+	absFilename, err := filepath.Abs(filename)
+	if err != nil {
+		logger.Error("获取事件文件绝对路径失败 %s: %v", filename, err)
+		return false
+	}
+
 	for _, path := range w.rulesPath {
-		if filename == path {
+		if absFilename == path {
 			return true
 		}
 	}
@@ -155,17 +174,8 @@ func (w *Watcher) reloadRules() {
 
 // loadRules 加载规则
 func (w *Watcher) loadRules() error {
-	var allRules []config.Rule
-	var err error
-
-	if len(w.rulesPath) > 1 {
-		// 从多个文件加载规则
-		allRules, err = config.LoadRulesFromPaths(w.rulesPath)
-	} else {
-		// 从单个文件加载规则
-		allRules, err = config.LoadRules(w.rulesPath[0])
-	}
-
+	// 注意：这里我们使用绝对路径来加载规则
+	allRules, err := config.LoadRulesFromPaths(w.rulesPath)
 	if err != nil {
 		return fmt.Errorf("加载规则失败: %v", err)
 	}
@@ -182,7 +192,7 @@ func (w *Watcher) loadRules() error {
 func (w *Watcher) GetRules() []config.Rule {
 	w.mutex.RLock()
 	defer w.mutex.RUnlock()
-	
+
 	rules := make([]config.Rule, len(w.rules))
 	copy(rules, w.rules)
 	return rules
@@ -197,7 +207,7 @@ func (w *Watcher) getRules() []config.Rule {
 func (w *Watcher) GetStats() map[string]interface{} {
 	w.mutex.RLock()
 	defer w.mutex.RUnlock()
-	
+
 	return map[string]interface{}{
 		"watching_files": w.rulesPath,
 		"rules_count":    len(w.rules),

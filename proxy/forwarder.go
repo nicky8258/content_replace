@@ -15,19 +15,21 @@ import (
 
 // Forwarder HTTP请求转发器
 type Forwarder struct {
-	targetURL   *url.URL
-	httpClient  *http.Client
-	config      *config.Config
+	targetURL      *url.URL           // 单目标模式使用
+	loadBalancer   *LoadBalancer      // 多目标模式使用
+	httpClient     *http.Client
+	config         *config.Config
+	isMultiTarget  bool
 }
 
 // NewForwarder 创建新的转发器
 func NewForwarder(cfg *config.Config) (*Forwarder, error) {
-	// 解析目标URL
-	targetURL, err := url.Parse(cfg.Target.BaseURL)
-	if err != nil {
-		return nil, fmt.Errorf("解析目标URL失败: %v", err)
+	// 获取目标URL
+	targetURLs := cfg.Target.GetTargetURLs()
+	if len(targetURLs) == 0 {
+		return nil, fmt.Errorf("没有配置目标服务器URL")
 	}
-
+	
 	// 创建HTTP客户端
 	httpClient := &http.Client{
 		Timeout: cfg.Target.Timeout,
@@ -37,20 +39,71 @@ func NewForwarder(cfg *config.Config) (*Forwarder, error) {
 			IdleConnTimeout:     90 * time.Second,
 		},
 	}
-
-	return &Forwarder{
-		targetURL:  targetURL,
+	
+	forwarder := &Forwarder{
 		httpClient: httpClient,
 		config:     cfg,
-	}, nil
+	}
+	
+	// 判断是单目标还是多目标模式
+	if len(targetURLs) > 1 {
+		// 多目标模式：创建负载均衡器
+		lb, err := NewLoadBalancer(targetURLs)
+		if err != nil {
+			return nil, fmt.Errorf("创建负载均衡器失败: %v", err)
+		}
+		forwarder.loadBalancer = lb
+		forwarder.isMultiTarget = true
+		logger.Infof("转发器初始化: 多目标负载均衡模式，服务器数量 = %d，策略 = %s",
+			len(targetURLs), cfg.Target.Strategy)
+		for i, urlStr := range targetURLs {
+			logger.Infof("  目标服务器[%d]: %s", i+1, urlStr)
+		}
+	} else {
+		// 单目标模式：直接使用单个URL
+		targetURLStr := targetURLs[0]
+		if targetURLStr == "" {
+			return nil, fmt.Errorf("目标服务器URL为空")
+		}
+		
+		targetURL, err := url.Parse(targetURLStr)
+		if err != nil {
+			return nil, fmt.Errorf("解析目标URL失败: %v", err)
+		}
+		
+		if targetURL.Scheme == "" {
+			return nil, fmt.Errorf("目标URL缺少协议(http/https): %s", targetURLStr)
+		}
+		
+		if targetURL.Host == "" {
+			return nil, fmt.Errorf("目标URL缺少主机地址: %s", targetURLStr)
+		}
+		
+		forwarder.targetURL = targetURL
+		forwarder.isMultiTarget = false
+		logger.Infof("转发器初始化: 单目标模式，目标URL = %s", targetURL.String())
+	}
+
+	return forwarder, nil
 }
 
 // ForwardRequest 转发HTTP请求
 func (f *Forwarder) ForwardRequest(req *http.Request, modifiedBody []byte) (*http.Response, error) {
 	startTime := time.Now()
 	
-	// 构建目标URL
-	targetURL := f.buildTargetURL(req.URL.Path, req.URL.RawQuery)
+	// 获取目标URL（支持负载均衡）
+	var baseURL *url.URL
+	if f.isMultiTarget {
+		// 多目标模式：从负载均衡器获取下一个目标
+		baseURL = f.loadBalancer.GetNext()
+		logger.Debugf("[负载均衡] 选择目标服务器: %s", baseURL.String())
+	} else {
+		// 单目标模式：使用固定目标
+		baseURL = f.targetURL
+	}
+	
+	// 构建完整的目标URL
+	targetURL := f.buildTargetURL(baseURL, req.URL.Path, req.URL.RawQuery)
 	
 	logger.Debugf("转发请求到: %s %s", req.Method, targetURL.String())
 	
@@ -81,14 +134,14 @@ func (f *Forwarder) ForwardRequest(req *http.Request, modifiedBody []byte) (*htt
 }
 
 // buildTargetURL 构建目标URL
-func (f *Forwarder) buildTargetURL(path, query string) *url.URL {
+func (f *Forwarder) buildTargetURL(baseURL *url.URL, path, query string) *url.URL {
 	// 确保路径以/开头
 	if !strings.HasPrefix(path, "/") {
 		path = "/" + path
 	}
 	
 	// 构建完整URL
-	targetURL := *f.targetURL // 复制目标URL
+	targetURL := *baseURL // 复制基础URL
 	targetURL.Path = path
 	targetURL.RawQuery = query
 	
@@ -143,11 +196,11 @@ func (f *Forwarder) removeProblematicHeaders(headers http.Header) {
 
 // CopyResponse 复制响应
 func (f *Forwarder) CopyResponse(w http.ResponseWriter, resp *http.Response) error {
-	// 复制状态码
-	w.WriteHeader(resp.StatusCode)
-	
 	// 复制响应头
 	f.copyResponseHeaders(resp.Header, w.Header())
+	
+	// 复制状态码
+	w.WriteHeader(resp.StatusCode)
 	
 	// 复制响应体
 	if resp.Body != nil {
@@ -197,8 +250,12 @@ func (f *Forwarder) shouldSkipResponseHeader(key string) bool {
 	return skipHeaders[lowerKey] || strings.HasPrefix(lowerKey, "proxy-")
 }
 
-// GetTargetURL 获取目标URL
+// GetTargetURL 获取目标URL（单目标模式）或第一个目标（多目标模式）
 func (f *Forwarder) GetTargetURL() *url.URL {
+	if f.isMultiTarget && f.loadBalancer != nil {
+		// 多目标模式：返回第一个目标
+		return f.loadBalancer.targets[0]
+	}
 	return f.targetURL
 }
 
@@ -214,7 +271,20 @@ func (f *Forwarder) SetTimeout(timeout time.Duration) {
 
 // IsHealthy 检查目标服务器健康状态
 func (f *Forwarder) IsHealthy(ctx context.Context) bool {
-	healthURL := *f.targetURL
+	var targetURL *url.URL
+	
+	if f.isMultiTarget && f.loadBalancer != nil {
+		// 多目标模式：检查第一个目标
+		targetURL = f.loadBalancer.targets[0]
+	} else {
+		targetURL = f.targetURL
+	}
+	
+	if targetURL == nil {
+		return false
+	}
+	
+	healthURL := *targetURL
 	healthURL.Path = "/health"
 	
 	req, err := http.NewRequestWithContext(ctx, "GET", healthURL.String(), nil)
@@ -238,8 +308,19 @@ func (f *Forwarder) IsHealthy(ctx context.Context) bool {
 
 // GetStats 获取转发器统计信息
 func (f *Forwarder) GetStats() map[string]interface{} {
-	return map[string]interface{}{
-		"target_url": f.targetURL.String(),
-		"timeout":    f.httpClient.Timeout.String(),
+	stats := map[string]interface{}{
+		"timeout":         f.httpClient.Timeout.String(),
+		"is_multi_target": f.isMultiTarget,
 	}
+	
+	if f.isMultiTarget && f.loadBalancer != nil {
+		stats["mode"] = "load_balancing"
+		stats["target_count"] = f.loadBalancer.GetTargetCount()
+		stats["strategy"] = f.config.Target.Strategy
+	} else if f.targetURL != nil {
+		stats["mode"] = "single_target"
+		stats["target_url"] = f.targetURL.String()
+	}
+	
+	return stats
 }

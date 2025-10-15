@@ -4,6 +4,7 @@ import (
 	"content_replace/config"
 	"content_replace/logger"
 	"content_replace/proxy"
+	"content_replace/watcher"
 	"flag"
 	"log"
 	"os"
@@ -39,12 +40,40 @@ func main() {
 		}
 	}()
 
+	// 如果启用了自动重载，则启动文件监听器
+	var fileWatcher *watcher.Watcher
+	if cfg.Rules.AutoReload {
+		// 收集所有规则文件路径
+		rulesPaths := cfg.Rules.Files
+		if cfg.Rules.File != "" {
+			rulesPaths = append(rulesPaths, cfg.Rules.File)
+		}
+
+		if len(rulesPaths) > 0 {
+			fileWatcher, err = watcher.NewWatcher(rulesPaths, func(rules []config.Rule) error {
+				server.UpdateRules(rules)
+				return nil
+			})
+			if err != nil {
+				logger.Error("创建文件监听器失败: %v", err)
+			} else {
+				fileWatcher.Start()
+			}
+		}
+	}
+
 	// 等待中断信号
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
 	logger.Info("正在关闭服务器...")
+
+	// 关闭文件监听器
+	if fileWatcher != nil {
+		fileWatcher.Stop()
+	}
+
 	server.Stop()
 	logger.Info("服务器已关闭")
 }

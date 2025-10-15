@@ -90,8 +90,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// 转发请求
 	resp, err := h.forwarder.ForwardRequest(req, modifiedBody)
 	if err != nil {
-		logger.Error("转发请求失败: %v", err)
-		http.Error(w, "转发请求失败", http.StatusBadGateway)
+		logger.Error("转发失败: %v", err)
+		http.Error(w, "转发失败", http.StatusBadGateway)
 		return
 	}
 	defer resp.Body.Close()

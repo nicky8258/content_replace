@@ -3,12 +3,25 @@
 # 服务器配置
 server:
   host: "0.0.0.0"          # 监听地址
-  port: 8080               # 监听端口
+  port: 16565               # 监听端口
 
 # 目标服务器配置
+
+# 方式2: 多目标服务器负载均衡（推荐）
 target:
-  base_url: "http://10.0.0.50:3001"  # 目标服务器地址
-  timeout: 30s                      # 请求超时时间
+  urls:                              # 多个目标服务器URL数组
+    - "http://10.0.0.52:16501"
+    - "http://10.0.0.52:16502"
+    - "http://10.0.0.52:16503"
+  timeout: 60s                       # 请求超时时间
+  strategy: "round_robin"            # 负载均衡策略
+#
+#   # 健康检查配置
+#   health_check:
+#     enabled: true                    # 启用健康检查
+#     interval: 30s                    # 检查间隔
+#     path: "/health"                  # 健康检查路径
+#     timeout: 5s                      # 健康检查超时
 
 # 日志配置
 logging:
@@ -30,6 +43,6 @@ rules:
 # 调试配置
 debug:
   enabled: true              # 是否启用调试模式
-  show_original: true        # 是否显示原始请求内容
+  show_original: false        # 是否显示原始请求内容
   show_modified: true        # 是否显示修改后请求内容
   show_rule_matches: true    # 是否显示规则匹配情况

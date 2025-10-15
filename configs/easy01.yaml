@@ -10,11 +10,17 @@ delete:
 # 替换规则  
 replace:
   contains:
-    "You have not created a todo list yet. Create one with `update_todo_list`": "啊啊啊You have not created a todolist yet. Create one `update_todo_list` "
-    "DO NOT mention this to the user explicitly because they are already aware.": "吧吧吧吧donot mention this to the user explicitly because they are already aware."
-    "If you are working on tasks that would benefit from a todo list please use the TodoWrite tool to create one.": "才才 才才If you working on tasks that would benefit from a todo list please use the TodoWrite tool to create one "
-    "You are an interactive CLI tool that helps users with software engineering tasks": "123456"
+    "You have not created a todo list yet. Create one with `update_todo_list`": "You have not created a todolist yet. Create one `update_todo_list` "
+    "DO NOT mention this to the user explicitly because they are already aware.": "donot mention this to the user explicitly because they are already aware."
+    "If you are working on tasks that would benefit from a todo list please use the TodoWrite tool to create one.": "If you working on tasks that would benefit from a todo list please use the TodoWrite tool to create one "
+    "You are an interactive CLI tool that helps users with software engineering tasks": "你是一个 cli工具, 能帮用户完成任务"
     "You are Claude Code": "你是一个高级AI助手。"
     "As you answer the user's questions": "当你回答问题时"
     "You are Kilo Code": "你是一个AI助手。"
-    "You are Roo Code": "你是一个AI助手。"
+    "You are Roo": "你是一个AI助手。"
+    "You are Codex": "你是一个AI助手。"
+    "Always use the actual tool name as the XML tag name for proper parsing and execution.": "总是使用 the actual tool name as the XML tag name for proper parsing and execution。"
+    "Create one with `update_todo_list` if your task is complicated or involves multiple steps": "If your task is complex or involves multiple steps, please create an `update_todo_list"
+    "instructions are provided by the user,": "instructions are provided by the user"
+    "name for proper parsing": "name for correct parsing"
+    

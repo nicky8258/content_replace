@@ -47,7 +47,7 @@ func NewServer(cfg *config.Config) *Server {
 	
 	// 创建处理器
 	handler := NewHandler(cfg, engine, forwarder)
-	
+
 	server := &Server{
 		config:    cfg,
 		engine:    engine,
@@ -56,12 +56,7 @@ func NewServer(cfg *config.Config) *Server {
 		ctx:       ctx,
 		cancel:    cancel,
 	}
-	
-	// 如果启用了规则自动重载
-	if cfg.Rules.AutoReload {
-		engine.StartAutoReload()
-	}
-	
+
 	return server
 }
 
@@ -75,43 +70,48 @@ func (s *Server) Start() error {
 		WriteTimeout: 30 * time.Second,
 		IdleTimeout:  120 * time.Second,
 	}
-	
+
 	logger.Infof("启动HTTP代理服务器在 %s", s.config.GetAddress())
-	
+
 	// 启动服务器
 	if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		return fmt.Errorf("服务器启动失败: %v", err)
 	}
-	
+
 	return nil
 }
 
 // Stop 停止服务器
 func (s *Server) Stop() error {
 	logger.Info("正在停止HTTP代理服务器...")
-	
+
 	// 取消上下文
 	s.cancel()
-	
+
 	// 停止替换引擎
 	s.engine.Stop()
-	
+
 	// 关闭HTTP服务器
 	if s.server != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
-		
+
 		if err := s.server.Shutdown(ctx); err != nil {
 			logger.Error("服务器关闭失败: %v", err)
 			return err
 		}
 	}
-	
+
 	// 等待所有goroutine完成
 	s.wg.Wait()
-	
+
 	logger.Info("HTTP代理服务器已停止")
 	return nil
+}
+
+// UpdateRules 更新规则
+func (s *Server) UpdateRules(rules []config.Rule) {
+	s.engine.UpdateRules(rules)
 }
 
 // GetEngine 获取替换引擎
