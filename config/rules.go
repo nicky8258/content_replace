@@ -166,7 +166,7 @@ func loadSingleRulesFile(rulesPath string) ([]Rule, error) {
 				} else {
 					// 作为普通删除规则处理
 					allRules = append(allRules, Rule{
-						Name:    fmt.Sprintf("删除-%s", path[:min(20, len(path))]),
+						Name:    "删除外部引用",
 						Enabled: true,
 						Mode:    ModeContains,
 						Pattern: path,
@@ -439,8 +439,24 @@ func (r *Rule) matchString(s string) bool {
 }
 
 
+// truncateString 截断字符串到指定长度，超出部分用省略号表示
+func truncateString(s string, maxLength int) string {
+	if len(s) <= maxLength {
+		return s
+	}
+	
+	if maxLength <= 3 {
+		return s[:maxLength] // 如果最大长度小于等于3，直接截断不添加省略号
+	}
+	
+	return s[:maxLength-3] + "..."
+}
+
 // GetDescription 获取规则描述
 func (r *Rule) GetDescription() string {
+	// 截断 Pattern，最大显示50个字符
+	truncatedPattern := truncateString(r.Pattern, 30)
+	
 	var actionDesc string
 	switch r.Action {
 	case ActionDelete:
@@ -448,11 +464,13 @@ func (r *Rule) GetDescription() string {
 	case ActionDeleteJsonField:
 		actionDesc = "删除JSON字段"
 	case ActionReplace:
-		actionDesc = fmt.Sprintf("替换为 '%s'", r.Value)
+		// 截断 Value，最大显示30个字符
+		truncatedValue := truncateString(r.Value, 30)
+		actionDesc = fmt.Sprintf("替换为 '%s'", truncatedValue)
 	}
 	
-	return fmt.Sprintf("%s: %s匹配 '%s' -> %s", 
-		r.Name, r.Mode, r.Pattern, actionDesc)
+	return fmt.Sprintf("%s: %s匹配 '%s' -> %s",
+		r.Name, r.Mode, truncatedPattern, actionDesc)
 }
 
 // IsEnabled 检查规则是否启用
@@ -497,9 +515,9 @@ func convertDeleteRules(delete *EasyDeleteRules) []Rule {
 	var rules []Rule
 	
 	// 包含删除
-	for i, pattern := range delete.Contains {
+	for _, pattern := range delete.Contains {
 		rules = append(rules, Rule{
-			Name:    fmt.Sprintf("批量删除-contains-%d", i+1),
+			Name:    "批量删除-包含内容",
 			Enabled: true,
 			Mode:    ModeContains,
 			Pattern: pattern,
@@ -508,9 +526,9 @@ func convertDeleteRules(delete *EasyDeleteRules) []Rule {
 	}
 	
 	// 前缀删除
-	for i, pattern := range delete.Prefix {
+	for _, pattern := range delete.Prefix {
 		rules = append(rules, Rule{
-			Name:    fmt.Sprintf("批量删除-prefix-%d", i+1),
+			Name:    "批量删除-前缀",
 			Enabled: true,
 			Mode:    ModePrefix,
 			Pattern: pattern,
@@ -519,9 +537,9 @@ func convertDeleteRules(delete *EasyDeleteRules) []Rule {
 	}
 	
 	// 后缀删除
-	for i, pattern := range delete.Suffix {
+	for _, pattern := range delete.Suffix {
 		rules = append(rules, Rule{
-			Name:    fmt.Sprintf("批量删除-suffix-%d", i+1),
+			Name:    "批量删除-后缀",
 			Enabled: true,
 			Mode:    ModeSuffix,
 			Pattern: pattern,
@@ -530,9 +548,9 @@ func convertDeleteRules(delete *EasyDeleteRules) []Rule {
 	}
 	
 	// 正则删除
-	for i, pattern := range delete.Regex {
+	for _, pattern := range delete.Regex {
 		rules = append(rules, Rule{
-			Name:    fmt.Sprintf("批量删除-regex-%d", i+1),
+			Name:    "批量删除-正则",
 			Enabled: true,
 			Mode:    ModeRegex,
 			Pattern: pattern,
@@ -550,7 +568,7 @@ func convertReplaceRules(replace *EasyReplaceRules) []Rule {
 	// 包含替换
 	for pattern, value := range replace.Contains {
 		rules = append(rules, Rule{
-			Name:    fmt.Sprintf("批量替换-contains-%s", pattern[:min(10, len(pattern))]),
+			Name:    "批量替换-包含内容",
 			Enabled: true,
 			Mode:    ModeContains,
 			Pattern: pattern,
@@ -562,7 +580,7 @@ func convertReplaceRules(replace *EasyReplaceRules) []Rule {
 	// 前缀替换
 	for pattern, value := range replace.Prefix {
 		rules = append(rules, Rule{
-			Name:    fmt.Sprintf("批量替换-prefix-%s", pattern[:min(10, len(pattern))]),
+			Name:    "批量替换-前缀",
 			Enabled: true,
 			Mode:    ModePrefix,
 			Pattern: pattern,
@@ -574,7 +592,7 @@ func convertReplaceRules(replace *EasyReplaceRules) []Rule {
 	// 后缀替换
 	for pattern, value := range replace.Suffix {
 		rules = append(rules, Rule{
-			Name:    fmt.Sprintf("批量替换-suffix-%s", pattern[:min(10, len(pattern))]),
+			Name:    "批量替换-后缀",
 			Enabled: true,
 			Mode:    ModeSuffix,
 			Pattern: pattern,
@@ -586,7 +604,7 @@ func convertReplaceRules(replace *EasyReplaceRules) []Rule {
 	// 正则替换
 	for pattern, value := range replace.Regex {
 		rules = append(rules, Rule{
-			Name:    fmt.Sprintf("批量替换-regex-%s", pattern[:min(10, len(pattern))]),
+			Name:    "批量替换-正则",
 			Enabled: true,
 			Mode:    ModeRegex,
 			Pattern: pattern,
@@ -603,9 +621,9 @@ func convertPrefixRules(prefix *EasyPrefixRules) []Rule {
 	var rules []Rule
 	
 	// 前缀删除
-	for i, pattern := range prefix.Delete {
+	for _, pattern := range prefix.Delete {
 		rules = append(rules, Rule{
-			Name:    fmt.Sprintf("前缀删除-%d", i+1),
+			Name:    "前缀删除",
 			Enabled: true,
 			Mode:    ModePrefix,
 			Pattern: pattern,
@@ -616,7 +634,7 @@ func convertPrefixRules(prefix *EasyPrefixRules) []Rule {
 	// 前缀替换
 	for pattern, value := range prefix.Replace {
 		rules = append(rules, Rule{
-			Name:    fmt.Sprintf("前缀替换-%s", pattern[:min(10, len(pattern))]),
+			Name:    "前缀替换",
 			Enabled: true,
 			Mode:    ModePrefix,
 			Pattern: pattern,
@@ -633,9 +651,9 @@ func convertSuffixRules(suffix *EasySuffixRules) []Rule {
 	var rules []Rule
 	
 	// 后缀删除
-	for i, pattern := range suffix.Delete {
+	for _, pattern := range suffix.Delete {
 		rules = append(rules, Rule{
-			Name:    fmt.Sprintf("后缀删除-%d", i+1),
+			Name:    "后缀删除",
 			Enabled: true,
 			Mode:    ModeSuffix,
 			Pattern: pattern,
@@ -646,7 +664,7 @@ func convertSuffixRules(suffix *EasySuffixRules) []Rule {
 	// 后缀替换
 	for pattern, value := range suffix.Replace {
 		rules = append(rules, Rule{
-			Name:    fmt.Sprintf("后缀替换-%s", pattern[:min(10, len(pattern))]),
+			Name:    "后缀替换",
 			Enabled: true,
 			Mode:    ModeSuffix,
 			Pattern: pattern,
@@ -663,9 +681,9 @@ func convertRegexRules(regex *EasyRegexRules) []Rule {
 	var rules []Rule
 	
 	// 正则删除
-	for i, pattern := range regex.Delete {
+	for _, pattern := range regex.Delete {
 		rules = append(rules, Rule{
-			Name:    fmt.Sprintf("正则删除-%d", i+1),
+			Name:    "正则删除",
 			Enabled: true,
 			Mode:    ModeRegex,
 			Pattern: pattern,
@@ -676,7 +694,7 @@ func convertRegexRules(regex *EasyRegexRules) []Rule {
 	// 正则替换
 	for pattern, value := range regex.Replace {
 		rules = append(rules, Rule{
-			Name:    fmt.Sprintf("正则替换-%s", pattern[:min(10, len(pattern))]),
+			Name:    "正则替换",
 			Enabled: true,
 			Mode:    ModeRegex,
 			Pattern: pattern,

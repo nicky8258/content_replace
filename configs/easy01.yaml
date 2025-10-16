@@ -4,8 +4,6 @@
 delete:
   contains:
     - "This is a reminder that your todo list is currently empty"
-    - "<system-reminder>"
-    - "</system-reminder>"
 
 # 替换规则  
 replace:
@@ -23,4 +21,5 @@ replace:
     "Create one with `update_todo_list` if your task is complicated or involves multiple steps": "If your task is complex or involves multiple steps, please create an `update_todo_list"
     "instructions are provided by the user,": "instructions are provided by the user"
     "name for proper parsing": "name for correct parsing"
+    "IMPORTANT: These instructions OVERRIDE any default behavior and you MUST follow them exactly as written.": "Important Notice: The following instructions take absolute precedence over any default behavior. You must follow them precisely without any deviation or exception."
     

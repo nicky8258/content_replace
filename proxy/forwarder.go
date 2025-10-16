@@ -11,6 +11,22 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	
+	"github.com/fatih/color"
+)
+
+// 颜色定义
+var (
+	greenF   = color.New(color.FgGreen).SprintFunc()
+	redF     = color.New(color.FgRed).SprintFunc()
+	yellowF  = color.New(color.FgYellow).SprintFunc()
+	blueF    = color.New(color.FgBlue).SprintFunc()
+	cyanF    = color.New(color.FgCyan).SprintFunc()
+	magentaF = color.New(color.FgMagenta).SprintFunc()
+	
+	boldGreenF  = color.New(color.FgGreen, color.Bold).SprintFunc()
+	boldCyanF   = color.New(color.FgCyan, color.Bold).SprintFunc()
+	boldYellowF = color.New(color.FgYellow, color.Bold).SprintFunc()
 )
 
 // Forwarder HTTP请求转发器
@@ -81,7 +97,7 @@ func NewForwarder(cfg *config.Config) (*Forwarder, error) {
 		
 		forwarder.targetURL = targetURL
 		forwarder.isMultiTarget = false
-		logger.Infof("转发器初始化: 单目标模式，目标URL = %s", targetURL.String())
+		logger.Infof("转发器初始化: %s，目标URL = %s", boldGreenF("单目标模式"), blueF(targetURL.String()))
 	}
 
 	return forwarder, nil
@@ -96,7 +112,7 @@ func (f *Forwarder) ForwardRequest(req *http.Request, modifiedBody []byte) (*htt
 	if f.isMultiTarget {
 		// 多目标模式：从负载均衡器获取下一个目标
 		baseURL = f.loadBalancer.GetNext()
-		logger.Debugf("[负载均衡] 选择目标服务器: %s", baseURL.String())
+		logger.Debugf("%s 选择目标服务器: %s", boldYellowF("[负载均衡]"), cyanF(baseURL.String()))
 	} else {
 		// 单目标模式：使用固定目标
 		baseURL = f.targetURL
@@ -105,7 +121,7 @@ func (f *Forwarder) ForwardRequest(req *http.Request, modifiedBody []byte) (*htt
 	// 构建完整的目标URL
 	targetURL := f.buildTargetURL(baseURL, req.URL.Path, req.URL.RawQuery)
 	
-	logger.Debugf("转发请求到: %s %s", req.Method, targetURL.String())
+	logger.Debugf("转发请求到: %s %s", boldCyanF(req.Method), blueF(targetURL.String()))
 	
 	// 创建新请求
 	targetReq, err := http.NewRequestWithContext(req.Context(), req.Method, targetURL.String(), bytes.NewReader(modifiedBody))
@@ -119,7 +135,7 @@ func (f *Forwarder) ForwardRequest(req *http.Request, modifiedBody []byte) (*htt
 	// 移除可能引起问题的头
 	f.removeProblematicHeaders(targetReq.Header)
 	
-	logger.Debugf("转发请求头数量: %d", len(targetReq.Header))
+	logger.Debugf("转发请求头数量: %s", cyanF(fmt.Sprintf("%d", len(targetReq.Header))))
 	
 	// 发送请求
 	resp, err := f.httpClient.Do(targetReq)
@@ -128,7 +144,15 @@ func (f *Forwarder) ForwardRequest(req *http.Request, modifiedBody []byte) (*htt
 	}
 	
 	duration := time.Since(startTime)
-	logger.Debugf("转发请求完成，状态码: %d，耗时: %v", resp.StatusCode, duration)
+	var coloredStatus string
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		coloredStatus = greenF(fmt.Sprintf("%d", resp.StatusCode))
+	} else if resp.StatusCode >= 400 {
+		coloredStatus = redF(fmt.Sprintf("%d", resp.StatusCode))
+	} else {
+		coloredStatus = yellowF(fmt.Sprintf("%d", resp.StatusCode))
+	}
+	logger.Debugf("转发请求完成，状态码: %s，耗时: %s", coloredStatus, blueF(duration.String()))
 	
 	return resp, nil
 }
@@ -153,7 +177,7 @@ func (f *Forwarder) copyHeaders(src, dst http.Header) {
 	for key, values := range src {
 		// 跳过一些不应该转发的头
 		if f.shouldSkipHeader(key) {
-			logger.Debugf("跳过转发头: %s", key)
+			logger.Debugf("跳过转发头: %s", yellowF(key))
 			continue
 		}
 		
@@ -212,7 +236,15 @@ func (f *Forwarder) CopyResponse(w http.ResponseWriter, resp *http.Response) err
 		}
 	}
 	
-	logger.Debugf("响应复制完成，状态码: %d", resp.StatusCode)
+	var coloredStatus string
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		coloredStatus = greenF(fmt.Sprintf("%d", resp.StatusCode))
+	} else if resp.StatusCode >= 400 {
+		coloredStatus = redF(fmt.Sprintf("%d", resp.StatusCode))
+	} else {
+		coloredStatus = yellowF(fmt.Sprintf("%d", resp.StatusCode))
+	}
+	logger.Debugf("响应复制完成，状态码: %s", coloredStatus)
 	return nil
 }
 
@@ -221,7 +253,7 @@ func (f *Forwarder) copyResponseHeaders(src, dst http.Header) {
 	for key, values := range src {
 		// 跳过一些不应该转发的响应头
 		if f.shouldSkipResponseHeader(key) {
-			logger.Debugf("跳过转发响应头: %s", key)
+			logger.Debugf("跳过转发响应头: %s", yellowF(key))
 			continue
 		}
 		
@@ -289,19 +321,33 @@ func (f *Forwarder) IsHealthy(ctx context.Context) bool {
 	
 	req, err := http.NewRequestWithContext(ctx, "GET", healthURL.String(), nil)
 	if err != nil {
-		logger.Debugf("创建健康检查请求失败: %v", err)
+		logger.Debugf("创建健康检查请求失败: %s", redF(err.Error()))
 		return false
 	}
 	
 	resp, err := f.httpClient.Do(req)
 	if err != nil {
-		logger.Debugf("健康检查请求失败: %v", err)
+		logger.Debugf("健康检查请求失败: %s", redF(err.Error()))
 		return false
 	}
 	defer resp.Body.Close()
 	
 	isHealthy := resp.StatusCode >= 200 && resp.StatusCode < 300
-	logger.Debugf("健康检查结果: %s (状态码: %d)", map[bool]string{true: "健康", false: "不健康"}[isHealthy], resp.StatusCode)
+	var statusText, statusColor string
+	if isHealthy {
+		statusText = "健康"
+		statusColor = greenF(statusText)
+	} else {
+		statusText = "不健康"
+		statusColor = redF(statusText)
+	}
+	var coloredStatusCode string
+	if isHealthy {
+		coloredStatusCode = greenF(fmt.Sprintf("%d", resp.StatusCode))
+	} else {
+		coloredStatusCode = redF(fmt.Sprintf("%d", resp.StatusCode))
+	}
+	logger.Debugf("健康检查结果: %s (状态码: %s)", statusColor, coloredStatusCode)
 	
 	return isHealthy
 }

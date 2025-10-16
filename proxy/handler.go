@@ -6,6 +6,7 @@ import (
 	"content_replace/replacer"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -156,9 +157,11 @@ func (h *Handler) logRequestDetails(req *http.Request, body string) {
 			// 限制调试模式下显示的请求体长度
 			maxDisplayLength := 1000
 			if len(body) > maxDisplayLength {
-				logger.Debugf("请求体内容 (前%d字符): %s...", maxDisplayLength, body[:maxDisplayLength])
+				compressedBody := compressJSONContent(body[:maxDisplayLength])
+				logger.Debugf("请求体内容 (前%d字符): %s...", maxDisplayLength, compressedBody)
 			} else {
-				logger.Debugf("请求体内容: %s", body)
+				compressedBody := compressJSONContent(body)
+				logger.Debugf("请求体内容: %s", compressedBody)
 			}
 		}
 	}
@@ -250,6 +253,33 @@ func (h *Handler) shouldSkipProcessing(req *http.Request) bool {
 			return true
 		}
 	}
-	
+
 	return false
+}
+
+// compressJSONContent 压缩 JSON 格式化内容
+func compressJSONContent(content string) string {
+	// 检查是否包含换行符（JSON 格式化的特征）
+	if !strings.Contains(content, "\n") {
+		return content // 如果没有换行符，可能已经是压缩格式
+	}
+	
+	// 尝试解析为 JSON 来验证格式
+	trimmed := strings.TrimSpace(content)
+	if (strings.HasPrefix(trimmed, "{") && strings.HasSuffix(trimmed, "}")) ||
+		(strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]")) {
+		// 看起来像 JSON，尝试压缩
+		var jsonInterface interface{}
+		if err := json.Unmarshal([]byte(content), &jsonInterface); err == nil {
+			// 如果能成功解析为 JSON，重新序列化为压缩格式
+			if compressed, err := json.Marshal(jsonInterface); err == nil {
+				return string(compressed)
+			}
+		}
+	}
+	
+	// 如果不是有效的 JSON，只移除换行符，保留原有内容
+	result := strings.ReplaceAll(content, "\n", " ")
+	result = strings.ReplaceAll(result, "\r", " ")
+	return result
 }
